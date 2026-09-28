@@ -1,19 +1,20 @@
 "use client";
 import { useState } from "react";
 import { api } from "../services/api";
-import { Bot, Send, Key, User, Sparkles } from "lucide-react";
+import { Bot, Send, Key, User, Sparkles, CheckCircle2 } from "lucide-react";
 
 export default function VivaAssistant({ projectData }: { projectData: any }) {
     const [input, setInput] = useState("");
     const [messages, setMessages] = useState<{ role: string, content: string }[]>([]);
     const [loading, setLoading] = useState(false);
     const [apiKey, setApiKey] = useState("");
+    const [showKeyConfig, setShowKeyConfig] = useState(false);
 
     const handleSend = async () => {
-        if (!input.trim() || !apiKey) return;
+        if (!input.trim() || loading) return;
 
         const newMsg = { role: "user", content: input };
-        setMessages([...messages, newMsg]);
+        setMessages(prev => [...prev, newMsg]);
         setInput("");
         setLoading(true);
 
@@ -22,7 +23,7 @@ export default function VivaAssistant({ projectData }: { projectData: any }) {
             const res = await api.chatViva(apiKey || "", history, projectData, "gemini");
             setMessages([...history, { role: "assistant", content: res.response }]);
         } catch (err: any) {
-            alert("Error: " + err.message);
+            setMessages(prev => [...prev, { role: "assistant", content: "⚠️ Error: " + (err.message || "Failed to generate response.") }]);
         } finally {
             setLoading(false);
         }
@@ -30,37 +31,53 @@ export default function VivaAssistant({ projectData }: { projectData: any }) {
 
     return (
         <div className="bg-card border border-border/50 rounded-[2rem] p-6 shadow-sm animate-fade-in-up relative overflow-hidden mt-8">
-            <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner">
-                    <Bot className="w-6 h-6" />
+            <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner">
+                        <Bot className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-foreground tracking-tight">Viva Assistant</h2>
+                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest flex items-center gap-1.5 mt-0.5">
+                            <Sparkles className="w-3 h-3 text-accent" />
+                            AI Powered Interview Coach
+                        </p>
+                    </div>
                 </div>
-                <div>
-                    <h2 className="text-xl font-bold text-foreground tracking-tight">Viva Assistant</h2>
-                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest flex items-center gap-1.5 mt-0.5">
-                        <Sparkles className="w-3 h-3 text-accent" />
-                        AI Powered Interview Coach
-                    </p>
+
+                <div className="flex items-center gap-2">
+                    <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <CheckCircle2 className="w-3 h-3" />
+                        System AI Active
+                    </span>
+                    <button
+                        onClick={() => setShowKeyConfig(!showKeyConfig)}
+                        title="Configure custom API key (optional)"
+                        className={`p-2 rounded-xl border text-xs transition-all ${showKeyConfig ? 'bg-primary text-white border-primary' : 'bg-muted/40 text-muted-foreground border-border/50 hover:text-foreground'}`}
+                    >
+                        <Key className="w-4 h-4" />
+                    </button>
                 </div>
             </div>
 
-            {/* API Key Box - Fixed Styling */}
-            {!apiKey && (
-                <div className="mb-6 p-5 rounded-2xl bg-primary/5 border border-primary/20 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <label className="text-xs font-bold text-primary block mb-3 uppercase tracking-[0.1em] flex items-center gap-2">
-                        <Key className="w-3.5 h-3.5" />
-                        AI Configuration
-                    </label>
+            {/* Optional Custom API Key Box */}
+            {showKeyConfig && (
+                <div className="mb-6 p-4 rounded-2xl bg-primary/5 border border-primary/20 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="flex items-center justify-between mb-2">
+                        <label className="text-xs font-bold text-primary uppercase tracking-[0.1em] flex items-center gap-2">
+                            <Key className="w-3.5 h-3.5" />
+                            Custom API Key (Optional)
+                        </label>
+                        <span className="text-[10px] text-muted-foreground">Default: Server Gemini Key</span>
+                    </div>
                     <div className="relative group">
                         <input
                             type="password"
                             value={apiKey}
                             onChange={(e) => setApiKey(e.target.value)}
-                            className="w-full text-sm py-3 px-4 rounded-xl bg-background border border-border/60 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all shadow-sm"
-                            placeholder="Paste your API key here"
+                            className="w-full text-sm py-2.5 px-4 rounded-xl bg-background border border-border/60 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all shadow-sm"
+                            placeholder="Leave empty to use server's built-in Gemini key"
                         />
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted-foreground uppercase">
-                           Encrypted
-                        </div>
                     </div>
                 </div>
             )}
@@ -73,7 +90,7 @@ export default function VivaAssistant({ projectData }: { projectData: any }) {
                         </div>
                         <div className="text-center">
                             <p className="text-sm font-bold text-muted-foreground">Ready to start your prep?</p>
-                            <p className="text-xs">Ask specific architecture or code questions.</p>
+                            <p className="text-xs">Ask specific architecture, logic, or viva defense questions.</p>
                         </div>
                     </div>
                 )}
@@ -86,7 +103,7 @@ export default function VivaAssistant({ projectData }: { projectData: any }) {
                         )}
                         <div className={`max-w-[85%] rounded-[1.25rem] px-5 py-3.5 text-sm leading-relaxed shadow-sm ${m.role === 'user'
                                 ? 'bg-primary text-primary-foreground rounded-tr-none font-medium'
-                                : 'bg-card text-foreground rounded-tl-none border border-border/50 font-medium'
+                                : 'bg-card text-foreground rounded-tl-none border border-border/50 font-medium whitespace-pre-wrap'
                             }`}>
                             {m.content}
                         </div>
@@ -117,14 +134,14 @@ export default function VivaAssistant({ projectData }: { projectData: any }) {
                         className="flex-1 bg-transparent pl-5 pr-14 py-4 text-sm text-foreground focus:outline-none placeholder:text-muted-foreground/50 font-medium"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        placeholder={apiKey ? "Ask about your project..." : "Enter API key above to chat"}
+                        placeholder="Ask about your project, architecture, viva questions..."
                         onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                        disabled={!apiKey || loading}
+                        disabled={loading}
                     />
                     <button
                         onClick={handleSend}
-                        disabled={loading || !apiKey}
-                        className="absolute right-2.5 p-2.5 bg-primary text-primary-foreground rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-0 shadow-lg shadow-primary/20"
+                        disabled={loading || !input.trim()}
+                        className="absolute right-2.5 p-2.5 bg-primary text-primary-foreground rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-40 shadow-lg shadow-primary/20"
                     >
                         <Send className="w-4 h-4" />
                     </button>

@@ -59,7 +59,7 @@ class LLMClient:
 
         # Set optimal models based on provider
         if self.provider == "gemini":
-            self.model = "gemini-2.0-flash"
+            self.model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
         elif self.provider == "openai":
             self.model = "gpt-4o-mini"
         elif self.provider == "anthropic":
@@ -74,7 +74,6 @@ class LLMClient:
             target_model = model or self.model
             
             # Use litellm for all providers (including gemini)
-            # litellm expects "gemini/gemini-1.5-flash"
             if self.provider == "gemini" and "/" not in target_model:
                 model_string = f"gemini/{target_model}"
             else:
@@ -85,17 +84,41 @@ class LLMClient:
                 # OllamaGenerator.generate is synchronous
                 return gen.generate(prompt, system=system_prompt, options={"temperature": temperature})
 
-            response = litellm.completion(
-                model=model_string,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": prompt}
-                ],
-                api_key=self.api_key,
-                temperature=temperature,
-                max_tokens=max_tokens
-            )
-            return response.choices[0].message.content
+            # For Gemini, define resilience fallback chain in case of temporary 503 capacity spikes
+            gemini_candidates = [
+                model_string,
+                "gemini/gemini-3.8-flash",
+                "gemini/gemini-3.5-flash",
+                "gemini/gemini-3.1-flash-lite",
+                "gemini/gemini-flash-latest"
+            ] if self.provider == "gemini" else [model_string]
+            # Deduplicate preserving order
+            gemini_candidates = list(dict.fromkeys(gemini_candidates))
+
+            last_err = None
+            for m in gemini_candidates:
+                try:
+                    response = litellm.completion(
+                        model=m,
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": prompt}
+                        ],
+                        api_key=self.api_key,
+                        temperature=temperature,
+                        max_tokens=max_tokens,
+                        num_retries=1
+                    )
+                    return response.choices[0].message.content
+                except Exception as ex:
+                    last_err = ex
+                    err_str = str(ex).lower()
+                    if "503" in err_str or "unavailable" in err_str or "not_found" in err_str or "404" in err_str:
+                        logger.warning(f"LLMClient ({m}) transient error: {ex}. Trying next fallback...")
+                        continue
+                    raise ex
+            if last_err:
+                raise last_err
         except Exception as e:
             # Specialized error reporting
             error_msg = str(e)
@@ -105,5 +128,7 @@ class LLMClient:
                 error_msg = f"Your {self.provider.upper()} API key has been reported as leaked and disabled by Google. Please generate a new one at https://aistudio.google.com/ and update your .env file."
             elif "rate_limit" in error_msg.lower():
                 error_msg = f"The {self.provider.upper()} API rate limit was hit."
+            elif "503" in error_msg.lower() or "unavailable" in error_msg.lower() or "high demand" in error_msg.lower():
+                error_msg = f"Google Gemini is currently experiencing high server demand. Please try sending your message again in a few moments."
             
             raise RuntimeError(f"Generation failed ({self.provider}): {error_msg}")
