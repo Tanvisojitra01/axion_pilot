@@ -46,8 +46,8 @@ const authHeaders = () => ({
 export const api = {
     // ── Auth ────────────────────────────────────────────────────────────────
 
-    // Step 1: Submit email + password → triggers OTP to be sent
-    loginStep1: async (email: string, password: string) => {
+    // Direct Login with email + password → immediately returns JWT
+    login: async (email: string, password: string) => {
         const formData = new URLSearchParams();
         formData.append('username', email);
         formData.append('password', password);
@@ -58,24 +58,31 @@ export const api = {
             body: formData,
         });
         if (!res.ok) {
-            const err = await res.json();
+            const err = await res.json().catch(() => ({}));
             throw new Error(err.detail || 'Login failed');
         }
-        return res.json(); // { requires_otp: true, message: "..." }
+        return res.json(); // { access_token, token_type }
     },
 
-    // Step 2: Submit OTP → receives JWT access token
+    // Step 1 backwards-compatibility alias
+    loginStep1: async (email: string, password: string) => {
+        return api.login(email, password);
+    },
+
+    // Step 2 backwards-compatibility fallback
     loginStep2: async (email: string, otp: string) => {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        if (token) return { access_token: token, token_type: "bearer" };
         const res = await fetch(`${API_BASE_URL}/auth/login/verify-otp`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, otp }),
         });
         if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.detail || 'OTP verification failed');
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || 'Authentication failed');
         }
-        return res.json(); // { access_token, token_type }
+        return res.json();
     },
 
     forgotPassword: async (email: string) => {
@@ -85,7 +92,7 @@ export const api = {
             body: JSON.stringify({ email }),
         });
         if (!res.ok) {
-            const err = await res.json();
+            const err = await res.json().catch(() => ({}));
             throw new Error(err.detail || 'Request failed');
         }
         return res.json();
@@ -98,12 +105,13 @@ export const api = {
             body: JSON.stringify({ email, otp, new_password }),
         });
         if (!res.ok) {
-            const err = await res.json();
+            const err = await res.json().catch(() => ({}));
             throw new Error(err.detail || 'Password reset failed');
         }
         return res.json();
     },
 
+    // Direct Signup → immediately returns JWT
     signup: async (email: string, password: string, full_name?: string, mobile?: string) => {
         const res = await fetch(`${API_BASE_URL}/auth/signup`, {
             method: 'POST',
@@ -111,10 +119,10 @@ export const api = {
             body: JSON.stringify({ email, password, full_name, mobile }),
         });
         if (!res.ok) {
-            const err = await res.json();
+            const err = await res.json().catch(() => ({}));
             throw new Error(err.detail || 'Signup failed');
         }
-        return res.json();
+        return res.json(); // { access_token, token_type }
     },
 
     verifySignup: async (email: string, emailOtp: string, mobileOtp: string) => {
@@ -124,7 +132,7 @@ export const api = {
             body: JSON.stringify({ email, email_otp: emailOtp, mobile_otp: mobileOtp }),
         });
         if (!res.ok) {
-            const err = await res.json();
+            const err = await res.json().catch(() => ({}));
             throw new Error(err.detail || 'Verification failed');
         }
         return res.json();

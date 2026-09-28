@@ -7,9 +7,10 @@ import { api, User } from "../services/api";
 interface AuthContextType {
     user: User | null;
     loading: boolean;
-    loginStep1: (email: string, password: string) => Promise<{ requires_otp: boolean; message?: string }>;
+    login: (email: string, password: string) => Promise<void>;
+    loginStep1: (email: string, password: string) => Promise<any>;
     loginStep2: (email: string, otp: string) => Promise<void>;
-    signup: (email: string, password: string, fullName: string, mobile?: string) => Promise<{ message?: string }>;
+    signup: (email: string, password: string, fullName: string, mobile?: string) => Promise<void>;
     verifySignup: (email: string, emailOtp: string, mobileOtp?: string) => Promise<void>;
     forgotPassword: (email: string) => Promise<{ message?: string }>;
     logout: () => void;
@@ -43,27 +44,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         initAuth();
     }, []);
 
+    // Direct Login (No OTP or email dependency)
+    const login = async (email: string, password: string) => {
+        const data = await api.login(email, password);
+        if (data?.access_token) {
+            localStorage.setItem("token", data.access_token);
+            await refreshUser();
+        }
+    };
+
     const loginStep1 = async (email: string, password: string) => {
-        return await api.loginStep1(email, password);
+        return login(email, password);
     };
 
     const loginStep2 = async (email: string, otp: string) => {
-        const data = await api.loginStep2(email, otp);
-        localStorage.setItem("token", data.access_token);
         await refreshUser();
     };
 
+    // Direct Signup (No OTP or email dependency)
     const signup = async (email: string, password: string, fullName: string, mobile?: string) => {
-        return await api.signup(email, password, fullName, mobile);
+        const data = await api.signup(email, password, fullName, mobile);
+        if (data?.access_token) {
+            localStorage.setItem("token", data.access_token);
+            await refreshUser();
+        }
     };
 
     const forgotPassword = async (email: string) => {
         return await api.forgotPassword(email);
     };
 
-    // mobileOtp is now optional / ignored by the backend — email OTP only
     const verifySignup = async (email: string, emailOtp: string, mobileOtp?: string) => {
-        await api.verifySignup(email, emailOtp, mobileOtp || "bypass");
+        await refreshUser();
     };
 
     const logout = () => {
@@ -76,6 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         <AuthContext.Provider value={{ 
             user, 
             loading, 
+            login,
             loginStep1, 
             loginStep2, 
             signup, 
