@@ -25,7 +25,7 @@ export interface User {
 }
 
 export interface ProjectRequest {
-    api_key: string;
+    api_key?: string;
     ai_provider?: string;
     domain: string;
     topic?: string;

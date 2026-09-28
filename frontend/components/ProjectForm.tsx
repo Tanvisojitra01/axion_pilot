@@ -148,9 +148,9 @@ export default function ProjectForm({ onProjectGenerated }: { onProjectGenerated
                 </header>
 
                 <form onSubmit={handleSubmit} className="space-y-10">
-                    {/* Provider & API Key */}
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-                        <div className="space-y-3 md:col-span-4">
+                    {/* Provider, Domain & Complexity */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="space-y-3">
                             <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-[2px] ml-2">
                                 Neural Engine
                             </label>
@@ -170,27 +170,6 @@ export default function ProjectForm({ onProjectGenerated }: { onProjectGenerated
                             </div>
                         </div>
 
-                        <div className="space-y-3 md:col-span-8">
-                            <div className="flex justify-between items-center px-2">
-                                <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-[2px]">
-                                    Access Credential
-                                </label>
-                                <span className="text-[9px] text-zinc-700 font-bold uppercase tracking-widest">System Default Active</span>
-                            </div>
-                            <input
-                                type="password"
-                                name="auth_key"
-                                autoComplete="off"
-                                value={formData.api_key}
-                                onChange={(e) => setFormData({ ...formData, api_key: e.target.value })}
-                                className="w-full apple-glass border-white/[0.05] rounded-2xl py-4 px-6 text-white focus:border-white/20 transition-all font-mono text-[13px] placeholder:text-zinc-800"
-                                placeholder="Enter secure key or leave for system bypass"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Domain & Difficulty */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="space-y-3">
                             <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-[2px] ml-2">
                                 Sector Domain
@@ -209,6 +188,7 @@ export default function ProjectForm({ onProjectGenerated }: { onProjectGenerated
                                 <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 rotate-90 pointer-events-none" />
                             </div>
                         </div>
+
                         <div className="space-y-3">
                             <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-[2px] ml-2">
                                 Index Complexity
