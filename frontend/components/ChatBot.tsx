@@ -32,7 +32,14 @@ export function ChatBot() {
     // Load API key from localStorage on mount (optional custom key)
     useEffect(() => {
         const savedKey = localStorage.getItem("assistant_api_key");
-        if (savedKey) setApiKey(savedKey);
+        if (savedKey) {
+            if (savedKey.includes("AIzaSyAWVSADm") || savedKey.length < 10) {
+                localStorage.removeItem("assistant_api_key");
+                setApiKey("");
+            } else {
+                setApiKey(savedKey);
+            }
+        }
     }, []);
 
     // Save API key when it changes
@@ -148,13 +155,24 @@ export function ChatBot() {
                                         Server AI Enabled
                                     </span>
                                 </div>
-                                <input
-                                    type="password"
-                                    placeholder="Leave blank to use server's built-in Gemini key"
-                                    value={apiKey}
-                                    onChange={(e) => setApiKey(e.target.value)}
-                                    className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-zinc-600"
-                                />
+                                <div className="flex gap-2">
+                                    <input
+                                        type="password"
+                                        placeholder="Leave blank to use server's built-in Gemini key"
+                                        value={apiKey}
+                                        onChange={(e) => setApiKey(e.target.value)}
+                                        className="flex-1 bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-zinc-600"
+                                    />
+                                    {apiKey && (
+                                        <button
+                                            type="button"
+                                            onClick={() => { setApiKey(""); localStorage.removeItem("assistant_api_key"); }}
+                                            className="text-[10px] px-3 py-1 bg-white/5 hover:bg-white/10 rounded-xl text-zinc-400 hover:text-white transition-all font-semibold"
+                                        >
+                                            Reset
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         )}
 
