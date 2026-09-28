@@ -1,0 +1,1 @@
+{"projects": ["id", "user_id", "title", "domain", "difficulty", "tech_stack", "data", "status", "created_at"], "project_contents": ["id", "project_id", "type", "content", "created_at"]}

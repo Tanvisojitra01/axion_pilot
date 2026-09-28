@@ -1,0 +1,26 @@
+fastapi
+uvicorn
+gunicorn
+python-multipart
+pydantic
+python-dotenv
+# Core dependencies from original project
+
+google-genai
+litellm
+python-docx
+python-pptx
+pandas
+fpdf
+watchdog
+sqlalchemy
+psycopg2-binary
+alembic
+slowapi
+passlib[bcrypt]
+python-jose[cryptography]
+email-validator
+httpx
+webauthn
+cbor2
+mangum

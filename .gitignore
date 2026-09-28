@@ -1,0 +1,67 @@
+# General
+.DS_Store
+*.pem
+.idea/
+.vscode/
+brain/
+key.txt
+*.db
+
+# Node modules (anywhere in the repo)
+node_modules/
+**/node_modules/
+
+# Frontend (Node/Next.js)
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+frontend/.vercel/
+frontend/*.tsbuildinfo
+frontend/next-env.d.ts
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# Backend (Python/FastAPI)
+backend/*.py[cod]
+backend/*$py.class
+**/__pycache__/
+*.py[cod]
+*$py.class
+backend/venv/
+backend/.venv/
+backend/env/
+backend/.env
+backend/*.db
+backend/*.sqlite3
+backend/sql_app.db
+backend/.pytest_cache/
+backend/.coverage
+backend/htmlcov/
+
+# Temp / migration helpers
+tmp/
+backend/add_mobile_column.py
+
+# OS
+Thumbs.db
+
+# Local / Legacy Files (kept locally, removed from repo)
+/*.md
+!/README.md
+!/LICENSE
+!/requirements.txt
+streamlit_app_legacy.py
+verify_enhancements.py
+frontend/lovable_import/
+frontend/fix_imports.py
+promote_admin.py
+backend/scripts/
+
+.vercel
+.env*.local
