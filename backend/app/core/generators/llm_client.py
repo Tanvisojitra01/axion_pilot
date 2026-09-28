@@ -18,45 +18,48 @@ class LLMClient:
         self.api_key = api_key.strip() if api_key and len(api_key.strip()) > 10 else None
         self.provider = provider.strip().lower() if provider else ""
         
-        # Auto-detect AI Provider and API Key
+        # Auto-detect AI Provider from env if not passed
         env_provider = os.getenv("AI_PROVIDER", "").strip().lower()
-        
         if not self.provider:
-            self.provider = env_provider
+            self.provider = env_provider or "gemini"
 
-        # PRIORITY: 1. Explicit provider, 2. Ollama (if URL exists), 3. Gemini, 4. Others
+        # Check for explicit or env API keys
         if not self.api_key:
-            if self.provider == "ollama" or (not self.provider and os.getenv("OLLAMA_BASE_URL")):
-                self.provider = "ollama"
-                self.api_key = "local-ollama"
-                logger.debug("LLMClient: Using local Ollama as primary provider")
-            elif self.provider == "gemini" or (not self.provider and os.getenv("GEMINI_API_KEY")):
+            # Check requested provider first
+            if self.provider == "gemini" and os.getenv("GEMINI_API_KEY"):
                 self.api_key = os.getenv("GEMINI_API_KEY")
-                self.provider = "gemini"
-                logger.debug("LLMClient: Loaded GEMINI_API_KEY from env")
-            else:
-                # Fall back to other providers
-                self.api_key = os.getenv("ANTHROPIC_API_KEY") or os.getenv("OPENAI_API_KEY")
-                if self.api_key:
-                    if os.getenv("ANTHROPIC_API_KEY"):
-                        self.provider = "anthropic"
-                    else:
-                        self.provider = "openai"
-                elif os.getenv("OLLAMA_BASE_URL"): # Final fallback to Ollama
-                    self.provider = "ollama"
+            elif self.provider == "anthropic" and os.getenv("ANTHROPIC_API_KEY"):
+                self.api_key = os.getenv("ANTHROPIC_API_KEY")
+            elif self.provider == "openai" and os.getenv("OPENAI_API_KEY"):
+                self.api_key = os.getenv("OPENAI_API_KEY")
+            elif self.provider == "xai" and os.getenv("XAI_API_KEY"):
+                self.api_key = os.getenv("XAI_API_KEY")
+            elif self.provider == "ollama" and os.getenv("OLLAMA_BASE_URL"):
+                self.api_key = "local-ollama"
+
+            # Resilient fallback: If requested provider key is not configured, route to active system key
+            if not self.api_key:
+                if os.getenv("GEMINI_API_KEY"):
+                    self.api_key = os.getenv("GEMINI_API_KEY")
+                    logger.info(f"LLMClient: Provider '{self.provider}' key not configured, routing to active GEMINI_API_KEY.")
+                    self.provider = "gemini"
+                elif os.getenv("OPENAI_API_KEY"):
+                    self.api_key = os.getenv("OPENAI_API_KEY")
+                    self.provider = "openai"
+                elif os.getenv("ANTHROPIC_API_KEY"):
+                    self.api_key = os.getenv("ANTHROPIC_API_KEY")
+                    self.provider = "anthropic"
+                elif os.getenv("OLLAMA_BASE_URL"):
                     self.api_key = "local-ollama"
+                    self.provider = "ollama"
                 else:
-                    logger.warning("LLMClient: No AI keys or Ollama URL found")
-        
+                    logger.warning("LLMClient: No AI keys or Ollama URL found in environment")
+
         # Validation
         if not self.api_key and self.provider != "ollama":
-            if os.getenv("OLLAMA_BASE_URL"):
-                self.provider = "ollama"
-                self.api_key = "local-ollama"
-            else:
-                raise ValueError("AI API Key or Ollama configuration is required")
+            raise RuntimeError("No active AI API Key configured in backend/.env. Please ensure GEMINI_API_KEY is present.")
 
-        # Set optimal models based on provider
+        # Set optimal models based on resolved provider
         if self.provider == "gemini":
             self.model = os.getenv("GEMINI_MODEL", "gemma-4-26b-a4b-it")
         elif self.provider == "openai":
@@ -66,7 +69,7 @@ class LLMClient:
         elif self.provider == "ollama":
             self.model = os.getenv("OLLAMA_MODEL", "llama3")
         else:
-            self.model = "default"
+            self.model = "gemma-4-26b-a4b-it"
 
     def generate(self, prompt, system_prompt="You are a helpful AI assistant.", model=None, temperature=0.7, max_tokens=4096):
         try:

@@ -123,7 +123,7 @@ def create_project(request: ProjectRequest, current_user: User = Depends(get_cur
     except Exception as e:
         db.rollback()
         logger.exception("Unexpected error in create_project")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
 
 @router.get("/list", response_model=List[dict])
 async def get_projects(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
