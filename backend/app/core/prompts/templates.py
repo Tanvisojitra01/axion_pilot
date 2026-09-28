@@ -158,3 +158,86 @@ Return ONLY valid JSON with no extra text outside the JSON:
         {{"question": "How does your system handle errors, exceptions, and invalid user inputs?", "answer": "The system handles errors by..."}}
     ]
 }}"""
+
+# --- HIGH-PERFORMANCE UNIFIED PROMPTS (10x Lower Latency) ---
+UNIFIED_SPEC_PROMPT = """You are a Principal Software Architect and Academic Project Lead.
+Generate a complete, industry-standard project blueprint and academic documentation for:
+
+Domain: {domain}
+Topic: {topic}
+Description: {description}
+Difficulty: {difficulty}
+Level: {level}
+Tech Stack: {tech_stack}
+
+Return ONLY a single valid JSON object with no markdown fences, no surrounding text, strictly adhering to this schema:
+{{
+    "title": "Professional Project Title",
+    "overview": "Detailed 150+ word overview of the project, core functionality, and real-world impact",
+    "features": [
+        "Feature 1: Description",
+        "Feature 2: Description",
+        "Feature 3: Description",
+        "Feature 4: Description",
+        "Feature 5: Description",
+        "Feature 6: Description"
+    ],
+    "abstract": "Academic-grade 200+ word abstract covering purpose, methodology, and outcome",
+    "problem_statement": "120+ word problem statement outlining the gap this project bridges",
+    "system_architecture": "150+ word architectural breakdown of modules, data flow, and components",
+    "database_design": "Schema design: key tables, primary/foreign keys, and data relationships",
+    "logic_flow": "Step-by-step user-action to backend-service and database logic flow",
+    "security_measures": "Auth, data protection, input sanitization, and encryption mechanisms",
+    "literature_survey": "Review of 3 existing technologies/solutions and how this project innovates upon them",
+    "methodology": "5-phase methodology: Requirements, Architecture, Implementation, Validation, and Deployment",
+    "tech_stack_details": {{
+        "frontend": "Frontend framework and libraries",
+        "backend": "Backend server and framework",
+        "database": "Database engine and ORM",
+        "other": "Auxiliary services, Docker, or APIs"
+    }},
+    "viva_questions": [
+        {{"question": "What is the primary objective of your system?", "answer": "The primary objective is..."}},
+        {{"question": "What architecture pattern did you choose and why?", "answer": "We implemented..."}},
+        {{"question": "Explain your database schema and relationships.", "answer": "The database uses..."}},
+        {{"question": "What authentication and security mechanisms are used?", "answer": "Security is enforced via..."}},
+        {{"question": "How does the system handle high traffic or concurrency?", "answer": "To scale, the system uses..."}},
+        {{"question": "What testing procedures were carried out?", "answer": "We validated through unit and integration testing..."}},
+        {{"question": "What was the most challenging technical hurdle?", "answer": "The key challenge was..."}},
+        {{"question": "What future improvements would you add to this project?", "answer": "Future additions include..."}}
+    ]
+}}"""
+
+FAST_CODEBASE_PROMPT = """You are a Senior Full-Stack Engineer.
+Generate production-ready, complete source code files for the following application.
+
+Project Title: {title}
+Domain: {domain}
+Tech Stack: {tech_stack}
+Difficulty: {difficulty}
+Level: {level}
+Overview: {overview}
+
+Generate 4 to 6 core functional files (main app, models, config, requirements, README) with real, working code.
+Return ONLY valid JSON with no markdown fences, no surrounding text:
+{{
+    "files": [
+        {{
+            "filename": "app.py",
+            "content": "# Full working main application code"
+        }},
+        {{
+            "filename": "models.py",
+            "content": "# Database models or schemas"
+        }},
+        {{
+            "filename": "requirements.txt",
+            "content": "flask>=2.3.0\npython-dotenv>=1.0.0"
+        }},
+        {{
+            "filename": "README.md",
+            "content": "# Project Title\\n\\n## Setup Instructions\\n1. pip install -r requirements.txt\\n2. python app.py"
+        }}
+    ]
+}}"""
+

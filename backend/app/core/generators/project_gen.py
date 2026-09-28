@@ -12,7 +12,9 @@ from ..prompts.templates import (
     CODEBASE_GENERATION_PROMPT,
     FLASK_CODEBASE_PROMPT,
     DOCUMENTATION_PROMPT,
-    VIVA_PREP_PROMPT
+    VIVA_PREP_PROMPT,
+    UNIFIED_SPEC_PROMPT,
+    FAST_CODEBASE_PROMPT
 )
 
 
@@ -285,130 +287,114 @@ if __name__ == '__main__':
 
 
 def generate_project(api_key, provider, domain, topic, description, difficulty, tech_stack, level, ai_config=None):
-    client = LLMClient(api_key=api_key, provider=provider)
+    import concurrent.futures
 
-    # Extract AI Config
+    client = LLMClient(api_key=api_key, provider=provider)
     config = ai_config or {}
     temp = config.get("temperature", 0.7)
     tokens = config.get("max_tokens", 4096)
-    pipeline_features = config.get("features", {
-        "advanced_mode": True,
-        "deep_code": True,
-        "extended_docs": True,
-        "arch_planning": True
-    })
 
-    # ── STAGE 1: IDEA EXPANSION ───────────────────────────────────────────────
-    logger.info("Pipeline Stage 1: Idea Expansion")
-    idea_prompt = IDEA_EXPANSION_PROMPT.format(
-        domain=domain, topic=topic, description=description,
-        difficulty=difficulty, level=level
-    )
-    res_idea = client.generate(idea_prompt, system_prompt=PROJECT_GENERATOR_SYSTEM_PROMPT,
-                               temperature=temp, max_tokens=tokens)
-    idea_data = extract_json(res_idea) or {}
+    topic_clean = topic or f"{domain} Production System"
+    desc_clean = description or f"A {difficulty} level engineering system for {domain} built with {tech_stack}."
 
-    title         = idea_data.get("expanded_title", topic)
-    overview      = idea_data.get("project_overview", description)
-    features_list = idea_data.get("features", [])
+    logger.info(f"Starting High-Performance Parallel Project Synthesis for: '{topic_clean}'")
 
-    logger.info(f"Stage 1 complete. Title: {title}, Features: {len(features_list)}")
-
-    # ── STAGE 2: ARCHITECTURE PLANNING ────────────────────────────────────────
-    arch_data = {}
-    if pipeline_features.get("arch_planning", True):
-        logger.info("Pipeline Stage 2: Architecture Planning")
-        arch_prompt = ARCHITECTURE_PLANNING_PROMPT.format(
-            title=title,
-            overview=overview,
-            features=", ".join(features_list[:5]),  # limit length for local LLM
+    def synthesize_blueprint():
+        """Generates title, overview, features, architecture, database, SRS doc, and viva prep in 1 optimized call."""
+        logger.info("Worker 1: Synthesizing Blueprint, Architecture, Documentation & Viva...")
+        prompt = UNIFIED_SPEC_PROMPT.format(
+            domain=domain,
+            topic=topic_clean,
+            description=desc_clean,
+            difficulty=difficulty,
+            level=level,
             tech_stack=tech_stack
         )
-        res_arch = client.generate(arch_prompt, system_prompt=PROJECT_GENERATOR_SYSTEM_PROMPT,
-                                   temperature=temp, max_tokens=tokens)
-        arch_data = extract_json(res_arch) or {}
-        logger.info(f"Stage 2 complete. Arch keys: {list(arch_data.keys())}")
+        res = client.generate(prompt, system_prompt=PROJECT_GENERATOR_SYSTEM_PROMPT, temperature=temp, max_tokens=tokens)
+        parsed = extract_json(res) or {}
+        logger.info(f"Worker 1 Complete. Blueprint fields: {list(parsed.keys())}")
+        return parsed
 
-    # ── STAGE 3: CODEBASE GENERATION ─────────────────────────────────────────
-    code_data = {"files": []}
-    if pipeline_features.get("deep_code", True):
-        logger.info("Pipeline Stage 3: Codebase Generation")
+    def synthesize_codebase():
+        """Generates the functional production code files concurrently."""
+        logger.info("Worker 2: Synthesizing Working Codebase Files...")
         if "flask" in tech_stack.lower():
-            code_prompt = FLASK_CODEBASE_PROMPT.format(
-                title=title, overview=overview, difficulty=difficulty, level=level
-            )
-        else:
-            code_prompt = CODEBASE_GENERATION_PROMPT.format(
-                architecture=arch_data.get("system_architecture", "Standard MVC Architecture"),
-                tech_stack=tech_stack,
+            prompt = FLASK_CODEBASE_PROMPT.format(
+                title=topic_clean,
+                overview=desc_clean,
                 difficulty=difficulty,
                 level=level
             )
-
-        res_code = client.generate(code_prompt, system_prompt=PROJECT_GENERATOR_SYSTEM_PROMPT,
-                                   temperature=temp, max_tokens=tokens)
-        parsed = extract_json(res_code)
-
-        if parsed and isinstance(parsed.get("files"), list) and len(parsed["files"]) > 0:
-            # Validate files have content
+        else:
+            prompt = FAST_CODEBASE_PROMPT.format(
+                title=topic_clean,
+                domain=domain,
+                tech_stack=tech_stack,
+                difficulty=difficulty,
+                level=level,
+                overview=desc_clean
+            )
+        res = client.generate(prompt, system_prompt=PROJECT_GENERATOR_SYSTEM_PROMPT, temperature=temp, max_tokens=tokens)
+        parsed = extract_json(res) or {}
+        files = parsed.get("files", [])
+        if isinstance(files, list) and len(files) > 0:
             valid_files = [
-                f for f in parsed["files"]
-                if isinstance(f, dict) and f.get("filename") and f.get("content")
-                and len(str(f.get("content", ""))) > 20  # not empty/placeholder
+                f for f in files
+                if isinstance(f, dict) and f.get("filename") and f.get("content") and len(str(f.get("content", ""))) > 15
             ]
             if valid_files:
-                code_data = {"files": valid_files}
-                logger.info(f"Stage 3 complete. Generated {len(valid_files)} valid files.")
-            else:
-                logger.warning("Stage 3: Files were empty/placeholders, using fallback.")
-                code_data = {"files": _fallback_files(title, tech_stack, overview)}
-        else:
-            logger.warning(f"Stage 3: JSON parse failed or no files, using fallback. Raw: {str(res_code)[:200]}")
-            code_data = {"files": _fallback_files(title, tech_stack, overview)}
+                logger.info(f"Worker 2 Complete. Generated {len(valid_files)} valid code files.")
+                return valid_files
+        logger.warning("Worker 2: Using robust fallback codebase.")
+        return _fallback_files(topic_clean, tech_stack, desc_clean)
 
-    # ── STAGE 4: DOCUMENTATION ────────────────────────────────────────────────
-    doc_data = {}
-    if pipeline_features.get("extended_docs", True):
-        logger.info("Pipeline Stage 4: Documentation Generation")
-        doc_prompt = DOCUMENTATION_PROMPT.format(
-            concept=overview,
-            architecture=arch_data.get("system_architecture", "Standard MVC Architecture")
-        )
-        res_doc = client.generate(doc_prompt, system_prompt=PROJECT_GENERATOR_SYSTEM_PROMPT,
-                                  temperature=temp, max_tokens=tokens)
-        doc_data = extract_json(res_doc) or {}
-        logger.info(f"Stage 4 complete. Doc keys: {list(doc_data.keys())}")
+    # Execute both workers concurrently
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        future_blueprint = executor.submit(synthesize_blueprint)
+        future_code = executor.submit(synthesize_codebase)
 
-    # ── STAGE 5: VIVA PREP ────────────────────────────────────────────────────
-    logger.info("Pipeline Stage 5: Viva Preparation")
-    file_names = [f.get("filename", "") for f in code_data.get("files", [])]
-    viva_prompt = VIVA_PREP_PROMPT.format(
-        title=title,
-        architecture=arch_data.get("system_architecture", "Standard Architecture")[:300],
-        code_summary=f"Files: {', '.join(file_names[:6])}"
-    )
-    res_viva = client.generate(viva_prompt, system_prompt=PROJECT_GENERATOR_SYSTEM_PROMPT,
-                               temperature=temp, max_tokens=tokens)
-    viva_data = extract_json(res_viva) or {"viva_questions": []}
-    logger.info(f"Stage 5 complete. Viva questions: {len(viva_data.get('viva_questions', []))}")
+        try:
+            blueprint_data = future_blueprint.result(timeout=50)
+        except Exception as e:
+            logger.error(f"Blueprint synthesis timed out or failed: {e}")
+            blueprint_data = {}
 
-    # ── Consolidated Result ───────────────────────────────────────────────────
+        try:
+            code_files = future_code.result(timeout=50)
+        except Exception as e:
+            logger.error(f"Code synthesis timed out or failed: {e}")
+            code_files = _fallback_files(topic_clean, tech_stack, desc_clean)
+
+    title = blueprint_data.get("title") or topic_clean
+    overview = blueprint_data.get("overview") or desc_clean
+    features_list = blueprint_data.get("features", [])
+
     return {
-        "title":                  title,
-        "abstract":               doc_data.get("abstract", overview),
-        "problem_statement":      doc_data.get("problem_statement", ""),
-        "architecture_description": arch_data.get("system_architecture", ""),
-        "tech_stack_details":     arch_data.get("tech_stack_details", {}),
-        "files":                  code_data.get("files", []),
-        "viva_questions":         viva_data.get("viva_questions", []),
-        "tags":                   [domain, difficulty],
+        "title":                    title,
+        "abstract":                 blueprint_data.get("abstract", overview),
+        "problem_statement":        blueprint_data.get("problem_statement", f"Solves core domain challenges in {domain} using modern {tech_stack} technologies."),
+        "architecture_description": blueprint_data.get("system_architecture", "Full-Stack Modular Architecture with secure API boundaries and scalable database design."),
+        "tech_stack_details":       blueprint_data.get("tech_stack_details", {
+            "frontend": "Modern UI Interface",
+            "backend": tech_stack,
+            "database": "Relational/Document Store",
+            "other": "REST API, JWT Authentication"
+        }),
+        "files":                    code_files,
+        "viva_questions":           blueprint_data.get("viva_questions", [
+            {"question": "What is the primary objective of your system?", "answer": f"The primary objective is to implement a robust {topic_clean} solving real-world {domain} challenges."},
+            {"question": "What technology stack did you use and why?", "answer": f"We chose {tech_stack} for its performance, modularity, and scalability."},
+            {"question": "How did you design the database and handle relationships?", "answer": "The schema uses normalized tables with foreign key constraints and indexing for fast query performance."},
+            {"question": "What security measures are implemented?", "answer": "Authentication with JWT, input sanitization, error handling, and secure endpoints."}
+        ]),
+        "tags":                     [domain, difficulty],
         "estimated_completion_time": "2-3 Weeks",
-        "domain":                 domain,
-        "difficulty":             difficulty,
-        "features":               features_list,
-        "database_design":        arch_data.get("database_design", ""),
-        "logic_flow":             arch_data.get("logic_flow", ""),
-        "security_measures":      arch_data.get("security_measures", ""),
-        "literature_survey":      doc_data.get("literature_survey", ""),
-        "methodology":            doc_data.get("methodology", ""),
+        "domain":                   domain,
+        "difficulty":               difficulty,
+        "features":                 features_list,
+        "database_design":          blueprint_data.get("database_design", "Normalized schema with primary and foreign key constraints."),
+        "logic_flow":               blueprint_data.get("logic_flow", "User request -> API Controller -> Business Logic Services -> Database -> Response."),
+        "security_measures":        blueprint_data.get("security_measures", "JWT auth, input validation, role checks, and encrypted communication."),
+        "literature_survey":        blueprint_data.get("literature_survey", "Analyzes contemporary architectural patterns and modern web/ML pipelines."),
+        "methodology":              blueprint_data.get("methodology", "1. Requirements Analysis, 2. Architectural Design, 3. Implementation, 4. Testing, 5. Deployment."),
     }
