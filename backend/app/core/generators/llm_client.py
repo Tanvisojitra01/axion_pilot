@@ -61,7 +61,7 @@ class LLMClient:
 
         # Set optimal models based on resolved provider
         if self.provider == "gemini":
-            self.model = os.getenv("GEMINI_MODEL", "gemma-4-26b-a4b-it")
+            self.model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
         elif self.provider == "openai":
             self.model = "gpt-4o-mini"
         elif self.provider == "anthropic":
@@ -69,7 +69,7 @@ class LLMClient:
         elif self.provider == "ollama":
             self.model = os.getenv("OLLAMA_MODEL", "llama3")
         else:
-            self.model = "gemma-4-26b-a4b-it"
+            self.model = "gemini-3.8-flash"
 
     def generate(self, prompt, system_prompt="You are a helpful AI assistant.", model=None, temperature=0.7, max_tokens=4096):
         try:
@@ -87,9 +87,9 @@ class LLMClient:
 
                 candidates = [
                     target_model.replace("gemini/", ""),
-                    "gemma-4-26b-a4b-it",
                     "gemini-3.8-flash",
-                    "gemini-flash-latest"
+                    "gemini-flash-latest",
+                    "gemma-4-26b-a4b-it"
                 ]
                 candidates = list(dict.fromkeys(candidates))
 

@@ -202,8 +202,19 @@ export const api = {
             body: JSON.stringify(data),
         });
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.detail || "Generation failed");
+            let errorMsg = `Generation failed (${response.status})`;
+            try {
+                const text = await response.text();
+                try {
+                    const errorData = JSON.parse(text);
+                    errorMsg = errorData.detail || errorData.message || errorMsg;
+                } catch {
+                    errorMsg = text || errorMsg;
+                }
+            } catch {
+                // Ignore text read error
+            }
+            throw new Error(errorMsg);
         }
         return response.json();
     },
