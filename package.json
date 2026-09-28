@@ -1,0 +1,15 @@
+{
+  "name": "axion-pilot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Axion Pilot - AI-Powered Production Engineering Blueprint Synthesizer",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "start": "npm --prefix frontend run start",
+    "lint": "npm --prefix frontend run lint"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT"
+}
