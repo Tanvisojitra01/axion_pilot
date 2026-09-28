@@ -13,8 +13,11 @@ const nextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
 
-  // Headers for caching
+  // Headers for caching (production only, to avoid caching dev assets)
   headers: async () => {
+    if (process.env.NODE_ENV !== 'production') {
+      return [];
+    }
     return [
       {
         source: '/:path((?!api/.*))*',
