@@ -4,9 +4,11 @@
   "private": true,
   "description": "Axion Pilot - AI-Powered Production Engineering Blueprint Synthesizer",
   "scripts": {
-    "dev": "npm --prefix frontend run dev",
+    "dev": "python run_local.py",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --app-dir backend",
     "build": "npm --prefix frontend run build",
-    "start": "npm --prefix frontend run start",
+    "start": "python run_local.py",
     "lint": "npm --prefix frontend run lint"
   },
   "keywords": [],

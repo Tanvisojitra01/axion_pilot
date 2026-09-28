@@ -1,13 +1,11 @@
 const getApiBaseUrl = () => {
     const raw = process.env.NEXT_PUBLIC_API_URL;
-    if (raw && raw !== "http://localhost:8000/api" && raw !== "http://localhost:8000") {
+    if (raw) {
         const clean = raw.replace(/\/$/, "");
         return clean.endsWith("/api") ? clean : `${clean}/api`;
     }
-    if (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
-        return `${window.location.origin}/api`;
-    }
-    return "http://localhost:8000/api";
+    // Default to relative /api so all requests automatically route through the single unified port
+    return "/api";
 };
 
 const API_BASE_URL = getApiBaseUrl();
