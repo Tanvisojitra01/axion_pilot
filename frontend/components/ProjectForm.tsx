@@ -148,28 +148,8 @@ export default function ProjectForm({ onProjectGenerated }: { onProjectGenerated
                 </header>
 
                 <form onSubmit={handleSubmit} className="space-y-10">
-                    {/* Provider, Domain & Complexity */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-[2px] ml-2">
-                                Neural Engine
-                            </label>
-                            <div className="relative group">
-                                <select
-                                    name="ai_provider"
-                                    value={formData.ai_provider || "gemini"}
-                                    onChange={handleChange}
-                                    className="w-full apple-glass border-white/[0.05] rounded-2xl py-4 pl-6 pr-12 text-white focus:border-white/20 outline-none appearance-none cursor-pointer hover:bg-white/[0.05] transition-all font-bold text-[13px] tracking-tight"
-                                >
-                                    <option value="gemini" className="bg-black">Standard Synth</option>
-                                    <option value="openai" className="bg-black">OpenAI X-1</option>
-                                    <option value="anthropic" className="bg-black">Claude Prime</option>
-                                    <option value="xai" className="bg-black">Grok Logic</option>
-                                </select>
-                                <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 rotate-90 pointer-events-none" />
-                            </div>
-                        </div>
-
+                    {/* Domain & Difficulty */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="space-y-3">
                             <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-[2px] ml-2">
                                 Sector Domain
